@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Personal Budget Tracker</title>
+  <meta name="description" content="A simple offline budget and expense tracker.">
+  <meta name="theme-color" content="#f4f6f5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101413" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Budget">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="main">
+    <!-- Home -->
+    <section id="view-home" class="view">
+      <header class="top">
+        <p class="eyebrow">Personal Budget Tracker</p>
+        <div class="month">
+          <button class="icon-btn" id="prevMonth" aria-label="Previous month">‹</button>
+          <h1 id="monthLabel"></h1>
+          <button class="icon-btn" id="nextMonth" aria-label="Next month">›</button>
+        </div>
+      </header>
+
+      <div class="card hero" id="budgetCard"></div>
+
+      <div class="tiles">
+        <div class="card tile"><p class="label">Income</p><p class="value pos" id="incomeTotal"></p></div>
+        <div class="card tile"><p class="label">Spent</p><p class="value" id="spentTotal"></p></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="homeAdd">＋ Add manually</button>
+        <button class="btn" id="homeScan">Scan screenshot</button>
+      </div>
+
+      <h2>Where it went</h2>
+      <div class="card" id="breakdown"></div>
+
+      <div class="row-head">
+        <h2>Recent</h2>
+        <button class="link" data-goto="list">See all</button>
+      </div>
+      <div class="card list" id="recent"></div>
+    </section>
+
+    <!-- Transactions -->
+    <section id="view-list" class="view" hidden>
+      <header class="top"><h1>Transactions</h1></header>
+      <input type="search" id="search" class="field" placeholder="Search name, note or category" autocomplete="off">
+      <div class="chips" id="filters">
+        <button class="chip on" data-filter="all">All</button>
+        <button class="chip" data-filter="expense">Expenses</button>
+        <button class="chip" data-filter="income">Income</button>
+        <button class="chip" data-filter="transfer">Transfers</button>
+        <button class="chip" data-filter="uncat">Uncategorized</button>
+      </div>
+      <div id="allTx"></div>
+    </section>
+
+    <!-- Settings -->
+    <section id="view-settings" class="view" hidden>
+      <header class="top"><h1>Settings</h1></header>
+
+      <h2>Monthly budget</h2>
+      <div class="card pad">
+        <label class="money-field"><span>₱</span>
+          <input id="budgetInput" inputmode="decimal" placeholder="0.00" autocomplete="off">
+        </label>
+        <p class="hint">How much you plan to spend each month. Transfers to yourself don't count against it.</p>
+      </div>
+
+      <h2>My own accounts</h2>
+      <div class="card pad">
+        <textarea id="myNames" class="field" rows="2" placeholder="e.g. Juan Dela Cruz, BPI savings"></textarea>
+        <p class="hint">Names that appear on receipts when you move money to yourself, separated by commas. Scanned receipts matching these are marked as transfers.</p>
+      </div>
+
+      <h2>Backup</h2>
+      <div class="card pad stack">
+        <p class="hint">Everything is stored only on this device. Save a backup file now and then so you don't lose it.</p>
+        <button class="btn" id="exportBtn">Save backup file</button>
+        <button class="btn" id="importBtn">Restore from backup</button>
+        <button class="btn" id="csvBtn">Export as spreadsheet (CSV)</button>
+        <button class="btn danger" id="wipeBtn">Erase all data</button>
+      </div>
+
+      <div id="installCard"></div>
+      <p class="about">Personal Budget Tracker <span id="version"></span> · <span id="offlineState"></span></p>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="Main">
+    <button class="tab on" data-tab="home"><span class="ti">◔</span>Home</button>
+    <button class="tab" data-tab="list"><span class="ti">≡</span>Transactions</button>
+    <button class="tab" data-tab="settings"><span class="ti">⚙︎</span>Settings</button>
+  </nav>
+  <button class="fab" id="fab" aria-label="Add transaction" hidden>＋</button>
+
+  <!-- Add / edit sheet -->
+  <div class="backdrop" id="backdrop" hidden></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+    <div class="sheet-head">
+      <button class="link" id="cancelBtn">Cancel</button>
+      <h3 id="sheetTitle">New transaction</h3>
+      <button class="link strong" id="saveBtn">Save</button>
+    </div>
+    <div class="sheet-body">
+      <div id="scanBox"></div>
+
+      <div class="seg" id="typeSeg" role="tablist">
+        <button data-type="expense" class="on">Expense</button>
+        <button data-type="income">Income</button>
+        <button data-type="transfer">Transfer</button>
+      </div>
+
+      <label class="amount"><span>₱</span>
+        <input id="fAmount" inputmode="decimal" placeholder="0.00" autocomplete="off">
+      </label>
+
+      <label class="lbl" for="fPayee" id="payeeLbl">Paid to</label>
+      <input id="fPayee" class="field" placeholder="Store or person" autocomplete="off">
+
+      <div id="catWrap">
+        <div class="lbl">Category <span class="auto" id="autoTag" hidden>suggested</span></div>
+        <div class="chips wrap" id="catChips"></div>
+      </div>
+      <p class="hint" id="transferHint" hidden>Money moved between your own accounts. It is kept in your history but left out of income and spending.</p>
+
+      <div class="two">
+        <div><label class="lbl" for="fDate">Date</label><input id="fDate" type="date" class="field"></div>
+        <div><label class="lbl" for="fRef">Reference no.</label><input id="fRef" class="field" placeholder="Optional" autocomplete="off"></div>
+      </div>
+
+      <label class="lbl" for="fNote">Note</label>
+      <input id="fNote" class="field" placeholder="e.g. lunch, jeep, load" autocomplete="off">
+
+      <button class="btn" id="sheetScan">Fill from a screenshot</button>
+      <button class="btn danger" id="deleteBtn" hidden>Delete transaction</button>
+    </div>
+  </div>
+
+  <input type="file" id="scanInput" accept="image/*" hidden>
+  <input type="file" id="importInput" accept="application/json,.json" hidden>
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
